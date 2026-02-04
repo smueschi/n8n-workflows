@@ -2,7 +2,7 @@ name: Fetch n8n Node Versions
 
 on:
   schedule:
-    - cron: '0 0 * * 0'  # Every Sunday at midnight
+    - cron: '0 0 * * 0'  # Every Sunday at midnight UTC
   workflow_dispatch:  # Manual trigger
 
 jobs:
@@ -14,6 +14,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for proper merge
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Fetch all n8n node versions
         env:
@@ -196,7 +199,7 @@ jobs:
               ((FAIL_COUNT++))
             fi
             
-            # Rate limiting protection (5000 requests/hour with token)
+            # Rate limiting protection
             sleep 0.1
           done
           
@@ -219,17 +222,8 @@ jobs:
           echo "========================================="
       
       - name: Commit and push changes
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add all-n8n-nodes.txt
-          
-          # Only commit if there are changes
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update n8n node versions [automated]"
-            git pull --rebase origin main
-            git push
-            echo "Changes pushed successfully"
-          fi
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update n8n node versions [automated]"
+          file_pattern: all-n8n-nodes.txt
+          branch: main
