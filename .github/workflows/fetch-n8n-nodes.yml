@@ -1,0 +1,61 @@
+name: Fetch n8n Node Versions
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Every Sunday at midnight
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  fetch-nodes:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Fetch all n8n node versions
+        run: |
+          echo "# n8n Complete Node Versions" > all-n8n-nodes.txt
+          echo "# Generated: $(date -u)" >> all-n8n-nodes.txt
+          echo "# Source: https://github.com/n8n-io/n8n" >> all-n8n-nodes.txt
+          echo "" >> all-n8n-nodes.txt
+          
+          # Get all node directories
+          NODE_DIRS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/n8n-io/n8n/contents/packages/nodes-base/nodes?ref=master" | \
+            jq -r '.[] | select(.type=="dir") | .name')
+          
+          echo "Found $(echo "$NODE_DIRS" | wc -l) node directories"
+          
+          # Fetch version for each node
+          for NODE_DIR in $NODE_DIRS; do
+            echo "Processing $NODE_DIR..."
+            
+            # Try multiple patterns to find the node file
+            for PATTERN in "${NODE_DIR}.node.ts" "${NODE_DIR}.node.json" "V2/${NODE_DIR}V2.node.ts" "V3/${NODE_DIR}V3.node.ts" "V4/${NODE_DIR}V4.node.ts"; do
+              
+              VERSION=$(curl -sf -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                "https://raw.githubusercontent.com/n8n-io/n8n/master/packages/nodes-base/nodes/${NODE_DIR}/${PATTERN}" 2>/dev/null | \
+                grep -oP '(version|"version"):\s*\K[0-9.]+' | head -1)
+              
+              if [ -n "$VERSION" ]; then
+                # Convert to lowercase and format
+                NODE_NAME=$(echo "$NODE_DIR" | sed 's/\([A-Z]\)/ \1/g' | sed 's/^ //' | tr '[:upper:]' '[:lower:]' | tr -d ' ')
+                echo "- n8n-nodes-base.${NODE_DIR}: typeVersion ${VERSION}" >> all-n8n-nodes.txt
+                break
+              fi
+            done
+            
+            # Rate limit protection
+            sleep 0.5
+          done
+          
+          echo "" >> all-n8n-nodes.txt
+          echo "## Total nodes: $(grep -c 'typeVersion' all-n8n-nodes.txt)" >> all-n8n-nodes.txt
+      
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add all-n8n-nodes.txt
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update n8n node versions [automated]" && git push)
