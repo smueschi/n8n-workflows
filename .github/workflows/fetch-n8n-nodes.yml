@@ -8,29 +8,35 @@ on:
 jobs:
   fetch-nodes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to push changes
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
       
       - name: Fetch all n8n node versions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "# n8n Complete Node Versions" > all-n8n-nodes.txt
-          echo "# Generated: $(date -u)" >> all-n8n-nodes.txt
-          echo "# Source: https://github.com/n8n-io/n8n" >> all-n8n-nodes.txt
+          echo "# Generated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> all-n8n-nodes.txt
+          echo "# Source: https://github.com/n8n-io/n8n/tree/master/packages/nodes-base" >> all-n8n-nodes.txt
+          echo "# Auto-updated weekly via GitHub Actions" >> all-n8n-nodes.txt
+          echo "" >> all-n8n-nodes.txt
+          echo "## NODE TYPE VERSIONS:" >> all-n8n-nodes.txt
           echo "" >> all-n8n-nodes.txt
           
-          # Comprehensive node mapping - 100+ most used nodes
+          # Comprehensive node mapping with verified paths
           declare -A NODES=(
             # Core Trigger Nodes
             ["manualTrigger"]="ManualTrigger/ManualTrigger.node.ts"
             ["webhook"]="Webhook/Webhook.node.ts"
             ["scheduleTrigger"]="ScheduleTrigger/ScheduleTrigger.node.ts"
             ["emailTrigger"]="EmailTrigger/EmailTrigger.node.ts"
-            ["sseTriger"]="SseTrigger/SseTrigger.node.ts"
             
             # Core Data Processing
-            ["httpRequest"]="HttpRequest/V4/HttpRequestV4.node.ts"
+            ["httpRequest"]="HttpRequest/HttpRequest.node.ts"
             ["code"]="Code/Code.node.ts"
             ["set"]="Set/v2/SetV2.node.ts"
             ["if"]="If/V2/IfV2.node.ts"
@@ -53,36 +59,25 @@ jobs:
             ["googleCalendar"]="Google/Calendar/GoogleCalendar.node.ts"
             ["googleDocs"]="Google/Docs/GoogleDocs.node.ts"
             ["googleSlides"]="Google/Slides/GoogleSlides.node.ts"
-            ["googleContacts"]="Google/Contacts/GoogleContacts.node.ts"
-            ["googleAnalytics"]="Google/Analytics/GoogleAnalytics.node.ts"
-            ["googleBigQuery"]="Google/BigQuery/GoogleBigQuery.node.ts"
-            ["googleCloud"]="Google/Cloud/GoogleCloud.node.ts"
             
             # Microsoft Suite
             ["microsoftExcel"]="Microsoft/Excel/MicrosoftExcel.node.ts"
             ["microsoftOutlook"]="Microsoft/Outlook/MicrosoftOutlook.node.ts"
             ["microsoftOneDrive"]="Microsoft/OneDrive/MicrosoftOneDrive.node.ts"
             ["microsoftTeams"]="Microsoft/Teams/MicrosoftTeams.node.ts"
-            ["microsoftSql"]="Microsoft/Sql/MicrosoftSql.node.ts"
-            ["microsoftToDo"]="Microsoft/ToDo/MicrosoftToDo.node.ts"
             
-            # AI & ML Nodes
+            # AI & ML
             ["openAi"]="OpenAi/OpenAi.node.ts"
             ["anthropic"]="Anthropic/Anthropic.node.ts"
             ["huggingFace"]="HuggingFace/HuggingFace.node.ts"
-            ["cohere"]="Cohere/Cohere.node.ts"
             
-            # Messaging & Communication
+            # Messaging
             ["slack"]="Slack/V2/SlackV2.node.ts"
             ["discord"]="Discord/Discord.node.ts"
             ["telegram"]="Telegram/Telegram.node.ts"
             ["whatsapp"]="WhatsApp/WhatsApp.node.ts"
             ["twilio"]="Twilio/Twilio.node.ts"
-            ["twilioVerify"]="TwilioVerify/TwilioVerify.node.ts"
             ["mattermost"]="Mattermost/Mattermost.node.ts"
-            ["rocketchat"]="RocketChat/RocketChat.node.ts"
-            ["zulip"]="Zulip/Zulip.node.ts"
-            ["matrix"]="Matrix/Matrix.node.ts"
             
             # Databases
             ["postgres"]="Postgres/Postgres.node.ts"
@@ -90,39 +85,27 @@ jobs:
             ["mongoDb"]="MongoDb/MongoDb.node.ts"
             ["redis"]="Redis/Redis.node.ts"
             ["sqlite"]="Sqlite/Sqlite.node.ts"
-            ["influxDb"]="InfluxDb/InfluxDb.node.ts"
-            ["questDb"]="QuestDb/QuestDb.node.ts"
             ["supabase"]="Supabase/Supabase.node.ts"
-            ["cockroach"]="Cockroach/Cockroach.node.ts"
-            ["cassandra"]="Cassandra/Cassandra.node.ts"
             
             # No-Code Databases
             ["airtable"]="Airtable/Airtable.node.ts"
             ["notion"]="Notion/Notion.node.ts"
             ["baserow"]="Baserow/Baserow.node.ts"
-            ["nocodb"]="NocoDB/NocoDB.node.ts"
-            ["seaTable"]="SeaTable/SeaTable.node.ts"
             
             # CRM & Sales
             ["hubspot"]="HubSpot/HubSpot.node.ts"
             ["salesforce"]="Salesforce/Salesforce.node.ts"
             ["pipedrive"]="Pipedrive/Pipedrive.node.ts"
-            ["zoho"]="Zoho/Zoho.node.ts"
-            ["freshworks"]="Freshworks/Freshworks.node.ts"
             ["zendesk"]="Zendesk/Zendesk.node.ts"
             ["intercom"]="Intercom/Intercom.node.ts"
-            ["crisp"]="Crisp/Crisp.node.ts"
-            ["livechat"]="LiveChat/LiveChat.node.ts"
+            ["freshworks"]="Freshworks/Freshworks.node.ts"
             
             # E-commerce & Payments
             ["stripe"]="Stripe/Stripe.node.ts"
             ["paypal"]="PayPal/PayPal.node.ts"
             ["shopify"]="Shopify/Shopify.node.ts"
             ["wooCommerce"]="WooCommerce/WooCommerce.node.ts"
-            ["magento"]="Magento/Magento.node.ts"
             ["square"]="Square/Square.node.ts"
-            ["paddle"]="Paddle/Paddle.node.ts"
-            ["lemonsqueezy"]="LemonSqueezy/LemonSqueezy.node.ts"
             
             # Project Management
             ["jira"]="Jira/Jira.node.ts"
@@ -131,9 +114,8 @@ jobs:
             ["clickup"]="ClickUp/ClickUp.node.ts"
             ["monday"]="Monday/Monday.node.ts"
             ["linear"]="Linear/Linear.node.ts"
-            ["gitlab"]="Gitlab/Gitlab.node.ts"
             ["github"]="Github/Github.node.ts"
-            ["bitbucket"]="Bitbucket/Bitbucket.node.ts"
+            ["gitlab"]="Gitlab/Gitlab.node.ts"
             
             # Social Media
             ["twitter"]="Twitter/Twitter.node.ts"
@@ -142,44 +124,29 @@ jobs:
             ["instagram"]="Instagram/Instagram.node.ts"
             ["youtube"]="YouTube/YouTube.node.ts"
             ["reddit"]="Reddit/Reddit.node.ts"
-            ["mastodon"]="Mastodon/Mastodon.node.ts"
-            ["tiktok"]="TikTok/TikTok.node.ts"
             
             # Cloud Storage
             ["awsS3"]="Aws/S3/AwsS3.node.ts"
             ["dropbox"]="Dropbox/Dropbox.node.ts"
             ["box"]="Box/Box.node.ts"
             ["nextCloud"]="NextCloud/NextCloud.node.ts"
-            ["minio"]="Minio/Minio.node.ts"
-            ["backblaze"]="Backblaze/Backblaze.node.ts"
             
             # Email Marketing
             ["mailchimp"]="Mailchimp/Mailchimp.node.ts"
             ["sendgrid"]="SendGrid/SendGrid.node.ts"
             ["mailgun"]="Mailgun/Mailgun.node.ts"
             ["brevo"]="Brevo/Brevo.node.ts"
-            ["customerIo"]="CustomerIo/CustomerIo.node.ts"
             ["activeCampaign"]="ActiveCampaign/ActiveCampaign.node.ts"
-            ["mailjet"]="Mailjet/Mailjet.node.ts"
             
             # Forms & Surveys
             ["typeform"]="Typeform/Typeform.node.ts"
             ["jotform"]="Jotform/Jotform.node.ts"
-            ["formIo"]="FormIo/FormIo.node.ts"
             ["surveyMonkey"]="SurveyMonkey/SurveyMonkey.node.ts"
             
-            # Analytics & Tracking
+            # Analytics
             ["googleAnalytics"]="GoogleAnalytics/GoogleAnalytics.node.ts"
             ["mixpanel"]="Mixpanel/Mixpanel.node.ts"
             ["segment"]="Segment/Segment.node.ts"
-            ["plausible"]="Plausible/Plausible.node.ts"
-            ["matomo"]="Matomo/Matomo.node.ts"
-            
-            # Automation & Webhooks
-            ["n8n"]="N8n/N8n.node.ts"
-            ["make"]="Make/Make.node.ts"
-            ["zapier"]="Zapier/Zapier.node.ts"
-            ["ifttt"]="Ifttt/Ifttt.node.ts"
             
             # Files & Documents
             ["readPdf"]="ReadPdf/ReadPdf.node.ts"
@@ -195,8 +162,6 @@ jobs:
             ["ssh"]="Ssh/Ssh.node.ts"
             ["ftp"]="Ftp/Ftp.node.ts"
             ["executeCommand"]="ExecuteCommand/ExecuteCommand.node.ts"
-            ["docker"]="Docker/Docker.node.ts"
-            ["kubernetes"]="Kubernetes/Kubernetes.node.ts"
             
             # Utilities
             ["dateTime"]="DateTime/DateTime.node.ts"
@@ -204,40 +169,67 @@ jobs:
             ["stopAndError"]="StopAndError/StopAndError.node.ts"
             ["respondToWebhook"]="RespondToWebhook/RespondToWebhook.node.ts"
             ["executeWorkflow"]="ExecuteWorkflow/ExecuteWorkflow.node.ts"
-            ["getResponseData"]="GetResponseData/GetResponseData.node.ts"
           )
           
-          echo "## ALL NODE VERSIONS:" >> all-n8n-nodes.txt
-          echo "" >> all-n8n-nodes.txt
+          SUCCESS_COUNT=0
+          FAIL_COUNT=0
           
-          for node in "${!NODES[@]}"; do
-            path="${NODES[$node]}"
-            echo "Fetching $node from $path..."
+          echo "Starting to fetch $(echo "${!NODES[@]}" | wc -w) nodes..."
+          echo ""
+          
+          for node_name in "${!NODES[@]}"; do
+            path="${NODES[$node_name]}"
             
-            VERSION=$(curl -sf -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://raw.githubusercontent.com/n8n-io/n8n/master/packages/nodes-base/nodes/${path}" 2>/dev/null | \
+            # Fetch with GitHub token for higher rate limit
+            VERSION=$(curl -sf \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3.raw" \
+              "https://api.github.com/repos/n8n-io/n8n/contents/packages/nodes-base/nodes/${path}?ref=master" 2>/dev/null | \
               grep -oP '(version|"version"|typeVersion):\s*\K[0-9.]+' | head -1)
             
             if [ -n "$VERSION" ]; then
-              echo "- n8n-nodes-base.${node}: typeVersion ${VERSION}" >> all-n8n-nodes.txt
+              echo "✓ n8n-nodes-base.$node_name: $VERSION"
+              echo "- n8n-nodes-base.$node_name: typeVersion $VERSION" >> all-n8n-nodes.txt
+              ((SUCCESS_COUNT++))
             else
-              echo "  ⚠️  Failed to fetch $node"
+              echo "✗ n8n-nodes-base.$node_name: FAILED"
+              ((FAIL_COUNT++))
             fi
             
-            sleep 0.2
+            # Rate limiting protection (5000 requests/hour with token)
+            sleep 0.1
           done
           
           echo "" >> all-n8n-nodes.txt
-          echo "## Total nodes fetched: $(grep -c 'typeVersion' all-n8n-nodes.txt)" >> all-n8n-nodes.txt
+          echo "## STATISTICS:" >> all-n8n-nodes.txt
+          echo "- Successfully fetched: $SUCCESS_COUNT nodes" >> all-n8n-nodes.txt
+          echo "- Failed: $FAIL_COUNT nodes" >> all-n8n-nodes.txt
+          echo "- Total nodes in list: $(echo "${!NODES[@]}" | wc -w)" >> all-n8n-nodes.txt
           echo "" >> all-n8n-nodes.txt
           echo "## USAGE RULES:" >> all-n8n-nodes.txt
           echo "- NEVER use n8n-nodes-base.start (removed)" >> all-n8n-nodes.txt
           echo "- ALWAYS start with a trigger node" >> all-n8n-nodes.txt
           echo "- Use these exact typeVersions" >> all-n8n-nodes.txt
+          
+          echo ""
+          echo "========================================="
+          echo "Fetch Summary:"
+          echo "Success: $SUCCESS_COUNT"
+          echo "Failed: $FAIL_COUNT"
+          echo "========================================="
       
-      - name: Commit and push if changed
+      - name: Commit and push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add all-n8n-nodes.txt
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update n8n node versions [automated]" && git push)
+          
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update n8n node versions [automated]"
+            git pull --rebase origin main
+            git push
+            echo "Changes pushed successfully"
+          fi
