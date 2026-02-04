@@ -220,10 +220,24 @@ jobs:
           echo "Success: $SUCCESS_COUNT"
           echo "Failed: $FAIL_COUNT"
           echo "========================================="
-      
+
       - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Update n8n node versions [automated]"
-          file_pattern: all-n8n-nodes.txt
-          branch: main
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Fetch and reset to remote
+          git fetch origin main
+          git reset --hard origin/main
+          
+          # Regenerate the file (already done in previous step)
+          git add all-n8n-nodes.txt
+          
+          if git diff --staged --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          
+          git commit -m "Update n8n node versions [automated]"
+          git push origin main
+
